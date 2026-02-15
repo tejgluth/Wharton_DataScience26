@@ -14,11 +14,12 @@ import numpy as np
 import pandas as pd
 
 from whsdsci.build_long import build_canonical_long
+from whsdsci.ensemble.oof import build_oof_predictions, select_diverse_models
 from whsdsci.eval.bootstrap import bootstrap_rank_stability
 from whsdsci.eval.cv import make_group_kfold_splits, make_time_split
 from whsdsci.eval.metrics import calibration_ratio, mae_total, poisson_deviance_safe, weighted_mse_rate
 from whsdsci.io import discover_paths
-from whsdsci.models import get_model_builders
+from whsdsci.models import get_ensemble_model_builders, get_model_builders
 from whsdsci.models.base import EPS_RATE, SkipModelError
 from whsdsci.models.elasticnet_rapm import ElasticNetRapmSoftplusModel
 from whsdsci.models.poisson_glm_offset_reg import PoissonGlmOffsetRegModel
@@ -244,6 +245,92 @@ def fit_full_and_rank(
     return top10_map, all_top10_df, status_map, fitted_models
 
 
+def prepare_ensemble_base_pool(
+    primary_df: pd.DataFrame,
+    base_builders: dict,
+    outputs_dir: Path,
+    logger: logging.Logger,
+    max_models: int = 6,
+) -> list[str]:
+    default_order = [
+        "POISSON_GLM_OFFSET_REG",
+        "POISSON_GLM_OFFSET",
+        "TWEEDIE_GLM_RATE",
+        "TWO_STAGE_SHOTS_XG",
+        "HURDLE_XG",
+        "RIDGE_RAPM_RATE_SOFTPLUS",
+        "DEFENSE_ADJ_TWO_STEP",
+    ]
+    available = [m for m in default_order if m in base_builders]
+    prior_metrics_path = outputs_dir / "metrics_summary.csv"
+
+    ranked: list[str] = []
+    if prior_metrics_path.exists():
+        try:
+            prev = pd.read_csv(prior_metrics_path)
+            prev = prev[(prev["status"] == "OK") & prev["method"].isin(available)]
+            prev = prev.sort_values("cv_poisson_deviance_mean")
+            ranked = prev["method"].astype(str).tolist()
+        except Exception as exc:
+            logger.warning("Failed to read prior metrics summary for ensemble pool: %s", exc)
+
+    for m in available:
+        if m not in ranked:
+            ranked.append(m)
+    ranked = ranked[: max(8, max_models)]
+
+    required = [m for m in ["POISSON_GLM_OFFSET_REG"] if m in ranked]
+    if not ranked:
+        return []
+
+    logger.info("Building EV OOF predictions for ensemble candidate pool: %s", ranked)
+    try:
+        oof_all = build_oof_predictions(primary_df, model_builders=base_builders, model_names=ranked, n_splits=5)
+        working = ranked
+    except Exception as exc:
+        logger.warning("Bulk OOF generation failed, falling back per-model: %s", exc)
+        working = []
+        base = pd.DataFrame(
+            {
+                "row_id": primary_df.index.to_numpy(),
+                "game_id": primary_df["game_id"].astype(str).to_numpy(),
+                "toi_hr": np.maximum(pd.to_numeric(primary_df["toi_hr"], errors="coerce").to_numpy(dtype=float), 1e-9),
+                "y_true_total": np.clip(pd.to_numeric(primary_df["xg_for"], errors="coerce").to_numpy(dtype=float), 0, None),
+            }
+        )
+        for m in ranked:
+            try:
+                o = build_oof_predictions(primary_df, model_builders=base_builders, model_names=[m], n_splits=5)
+                base[f"mu_pred_total_{m}"] = o[f"mu_pred_total_{m}"]
+                working.append(m)
+            except Exception as exc_m:
+                logger.warning("Skipping ensemble candidate %s due OOF failure: %s", m, exc_m)
+        oof_all = base
+
+    selected = select_diverse_models(
+        oof_df=oof_all,
+        ranked_model_names=working,
+        max_models=max_models,
+        corr_threshold=0.995,
+        required_models=required,
+    )
+    for m in required:
+        if m not in selected and m in working:
+            selected.insert(0, m)
+    selected = selected[:max_models]
+
+    if len(selected) < 2:
+        # Fallback safety.
+        selected = working[: min(max_models, len(working))]
+
+    keep_cols = ["row_id", "game_id", "toi_hr", "y_true_total"] + [f"mu_pred_total_{m}" for m in selected]
+    oof_selected = oof_all[keep_cols].copy()
+    oof_selected.to_parquet(outputs_dir / "oof_predictions_ev.parquet", index=False)
+
+    logger.info("Selected ensemble base pool: %s", selected)
+    return selected
+
+
 def _plot_method(
     method_name: str,
     model,
@@ -335,6 +422,7 @@ def write_results_readme(
     best_method: str,
     best_rationale: str,
     final_top10: pd.DataFrame,
+    ensemble_base_models: list[str],
 ) -> None:
     lines = []
     lines.append("# Phase 1b Results")
@@ -366,7 +454,23 @@ def write_results_readme(
         lines.append("```")
         lines.append(stability_summary.to_string(index=False))
         lines.append("```")
-        lines.append("")
+    lines.append("")
+
+    lines.append("## Ensemble Notes")
+    lines.append("- Stacking and super learner variants were trained with grouped inner OOF predictions on training folds only.")
+    lines.append("- Convex blend used nonnegative simplex weights minimizing OOF Poisson deviance (with small L2 grid).")
+    lines.append("- Stacking used PoissonRegressor on log base predictions.")
+    lines.append(f"- Ensemble base pool: {ensemble_base_models}")
+    lines.append("")
+
+    lines.append("## References")
+    lines.append("- Wolpert (1992), Stacked Generalization: https://www.researchgate.net/publication/222467943_Stacked_Generalization")
+    lines.append("- van der Laan et al. (2007), Super Learner: https://doi.org/10.2202/1544-6115.1309")
+    lines.append("- Polley (2010), Super Learner technical report: https://biostats.bepress.com/ucbbiostat/paper222/")
+    lines.append("- sklearn StackingRegressor API: https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.StackingRegressor.html")
+    lines.append("- sklearn mean_poisson_deviance API: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_poisson_deviance.html")
+    lines.append("- sklearn PoissonRegressor API: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PoissonRegressor.html")
+    lines.append("")
 
     lines.append("## Best Method")
     lines.append(f"- method: {best_method}")
@@ -407,6 +511,29 @@ def make_bootstrap_factory(method_name: str, fitted_model, default_factory):
     return default_factory
 
 
+def write_ensemble_weights(out_path: Path, fitted_models: dict[str, object], base_pool: list[str]) -> None:
+    payload: dict[str, object] = {
+        "ensemble_base_pool": base_pool,
+        "ensembles": {},
+    }
+    for method_name, model in fitted_models.items():
+        if not method_name.startswith("ENSEMBLE_"):
+            continue
+        details = {}
+        artifacts = getattr(model, "artifacts", None)
+        if artifacts is not None:
+            details = getattr(artifacts, "details", {}) or {}
+            payload["ensembles"][method_name] = {
+                "base_model_names": list(getattr(artifacts, "base_model_names", [])),
+                "details": details,
+            }
+        else:
+            payload["ensembles"][method_name] = {"details": {}}
+
+    with out_path.open("w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+
+
 def main() -> None:
     repo_root = Path.cwd()
     outputs_dir = repo_root / "outputs"
@@ -434,10 +561,23 @@ def main() -> None:
 
     run_pytest(repo_root=repo_root, logger=logger)
 
-    builders = get_model_builders(random_state=RANDOM_STATE)
+    base_builders = get_model_builders(random_state=RANDOM_STATE)
 
     # Primary benchmark on EV-only (or fallback to all states if EV empty).
     primary_df = ev_df if not ev_df.empty else long_df
+    ensemble_base_models = prepare_ensemble_base_pool(
+        primary_df=primary_df,
+        base_builders={k: v for k, v in base_builders.items() if not k.startswith("LOWRANK") and not k.startswith("BAYES")},
+        outputs_dir=outputs_dir,
+        logger=logger,
+        max_models=6,
+    )
+    ensemble_builders = get_ensemble_model_builders(
+        random_state=RANDOM_STATE,
+        base_model_builders={k: base_builders[k] for k in ensemble_base_models if k in base_builders},
+        base_model_names=ensemble_base_models,
+    )
+    builders = {**base_builders, **ensemble_builders}
     metrics_cv, status_ev = evaluate_methods(
         df=primary_df,
         builders=builders,
@@ -454,7 +594,7 @@ def main() -> None:
     # Sensitivity benchmark on all states.
     metrics_all, status_all = evaluate_methods(
         df=long_df,
-        builders=builders,
+        builders=base_builders,
         logger=logger,
         dataset_label="ALL_STATES",
         n_splits=3,
@@ -475,7 +615,8 @@ def main() -> None:
         ["method"]
         .tolist()
     )
-    bootstrap_methods = ok_methods[:3]
+    ok_methods_fast = [m for m in ok_methods if not m.startswith("ENSEMBLE_")]
+    bootstrap_methods = ok_methods_fast[:3] if len(ok_methods_fast) >= 1 else ok_methods[:3]
     top_for_300 = set(bootstrap_methods[:1])
 
     stability_rows: list[dict] = []
@@ -528,7 +669,8 @@ def main() -> None:
                 }
             )
 
-    for method_name in ok_methods[3:]:
+    skipped_bootstrap = [m for m in ok_methods if m not in bootstrap_methods]
+    for method_name in skipped_bootstrap:
         stability_rows.append(
             {
                 "method": method_name,
@@ -537,7 +679,7 @@ def main() -> None:
                 "stability_score": np.nan,
                 "mean_rank_std_full_top10": np.nan,
                 "mean_top10_rate_full_top10": np.nan,
-                "note": "Bootstrap skipped to control runtime; top-3 methods were bootstrapped.",
+                "note": "Bootstrap skipped to control runtime; fast top methods were bootstrapped.",
             }
         )
 
@@ -558,6 +700,12 @@ def main() -> None:
         f.write(f"best_method={best_method}\n")
         f.write(f"rationale={best_rationale}\n")
 
+    write_ensemble_weights(
+        out_path=outputs_dir / "ensemble_weights.json",
+        fitted_models=fitted_models,
+        base_pool=ensemble_base_models,
+    )
+
     # Plots for each method that fit on full data.
     for method_name, model in fitted_models.items():
         top10_df = top10_map.get(method_name)
@@ -576,6 +724,7 @@ def main() -> None:
         best_method=best_method,
         best_rationale=best_rationale,
         final_top10=final_top10,
+        ensemble_base_models=ensemble_base_models,
     )
 
     logger.info("Methods sorted by mean CV Poisson deviance:\n%s", metrics_summary.to_string(index=False))
