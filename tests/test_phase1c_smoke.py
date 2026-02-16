@@ -5,8 +5,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from phases.phase1b.system import BestConfig
 from phases.phase1c.run import run_phase1c
-from whsdsci.best_config import BestConfig
 
 
 def _tiny_ev_df(n_games: int = 12, segments_per_game: int = 8, random_state: int = 0) -> pd.DataFrame:

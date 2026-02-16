@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -9,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from phases.common import get_git_commit, load_ev_dataset, resolve_phase1b_config, setup_logger, write_simple_yaml
-from whsdsci.models.tree_poisson_best import TreePoissonBestModel
+from phases.phase1b.system import TreePoissonBestModel
 from whsdsci.strength import compute_disparity_ratios, compute_standardized_strengths
 
 
@@ -79,6 +80,10 @@ def run_phase1c(
     _make_phase1c_plot(viz_df, out_dir / "phase1c_line_disparity_vs_team_strength.png")
     viz_df.to_csv(out_dir / "phase1c_viz_table.csv", index=False)
     viz_df.to_csv(Path("outputs") / "phase1c_output.csv", index=False)
+    phase_art = repo_root / "phases" / "phase1c" / "artifacts"
+    phase_art.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(out_dir / "phase1c_line_disparity_vs_team_strength.png", phase_art / "phase1c_line_disparity_vs_team_strength.png")
+    shutil.copyfile(out_dir / "phase1c_viz_table.csv", phase_art / "phase1c_viz_table.csv")
 
     config_export = {
         "config_id": cfg.config_id,
@@ -128,4 +133,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

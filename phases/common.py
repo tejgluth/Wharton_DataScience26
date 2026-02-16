@@ -8,7 +8,7 @@ from typing import Any
 
 import pandas as pd
 
-from whsdsci.best_config import BestConfig, resolve_best_config
+from phases.phase1b.system import BestConfig, resolve_best_config
 from whsdsci.build_long import build_canonical_long
 from whsdsci.io import discover_paths
 

@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pandas as pd
 
 from phases.common import setup_logger
-from whsdsci.best_config import resolve_best_config
+from phases.phase1b.system import TreePoissonBestModel, resolve_best_config
 from whsdsci.build_long import build_canonical_long
 from whsdsci.io import discover_paths
-from whsdsci.models.tree_poisson_best import TreePoissonBestModel
 from whsdsci.strength import compute_disparity_ratios, compute_standardized_strengths
 
 
@@ -40,6 +40,10 @@ def run_phase1b_best(repo_root: Path | None = None, outputs_dir: Path | None = N
 
     top10.to_csv(out / "final_top10.csv", index=False)
     top10.to_csv(out / "submission_phase1b.csv", index=False)
+    phase_art = repo / "phases" / "phase1b" / "artifacts"
+    phase_art.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(out / "final_top10.csv", phase_art / "final_top10.csv")
+    shutil.copyfile(out / "submission_phase1b.csv", phase_art / "submission_phase1b.csv")
     with (out / "best_method.txt").open("w", encoding="utf-8") as f:
         f.write(f"best_method={cfg.combiner_family}\n")
         f.write(f"config_id={cfg.config_id}\n")
@@ -60,4 +64,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
