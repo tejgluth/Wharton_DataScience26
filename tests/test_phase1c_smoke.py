@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from phases.phase1c.run import run_phase1c
-from whsdsci.ensemble.search import Config
+from whsdsci.best_config import BestConfig
 
 
 def _tiny_ev_df(n_games: int = 12, segments_per_game: int = 8, random_state: int = 0) -> pd.DataFrame:
@@ -46,13 +46,14 @@ def _tiny_ev_df(n_games: int = 12, segments_per_game: int = 8, random_state: int
 
 def test_phase1c_small_mode_smoke(tmp_path: Path, monkeypatch):
     ev_df = _tiny_ev_df()
-    cfg = Config(
+    cfg = BestConfig(
         config_id="cfg_test_phase1c",
-        combiner_family="mean",
+        combiner_family="tree_poisson",
         base_pool_id="tiny_pool",
-        base_models=["BASELINE_LINE_MEAN_RATE", "DEFENSE_ADJ_TWO_STEP"],
+        base_models=["POISSON_GLM_OFFSET", "DEFENSE_ADJ_TWO_STEP"],
         calibration_type="none",
-        hyperparams={},
+        hyperparams={"backend": "auto", "max_depth": 2, "learning_rate": 0.1, "n_estimators": 60},
+        metadata={},
     )
 
     def _fake_load_ev_dataset(repo_root: Path, outputs_dir: Path):

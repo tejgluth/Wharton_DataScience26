@@ -6,9 +6,5 @@ statsmodels
 patsy
 pyarrow
 matplotlib
-tqdm
 pytest
-pypdf
-torch
-pymc
-arviz
+xgboost

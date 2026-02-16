@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import PoissonRegressor
 
-from whsdsci.ensemble.search import Config, FittedSearchModel
+from whsdsci.best_config import BestConfig
 from whsdsci.eval.cv import make_group_kfold_splits
 from whsdsci.eval.metrics import calibration_ratio, mae_total, poisson_deviance_safe, weighted_mse_rate
-from whsdsci.models import get_model_builders
+from whsdsci.models.tree_poisson_best import TreePoissonBestModel
 from whsdsci.strength import compute_disparity_ratios, compute_standardized_strengths
 
 
@@ -157,7 +158,7 @@ def _select_alpha(
 def _fold_predictions(
     train_df: pd.DataFrame,
     test_df: pd.DataFrame,
-    cfg: Config,
+    cfg: BestConfig,
     seed: int,
 ) -> tuple[np.ndarray, np.ndarray, pd.DataFrame]:
     pred_train_base, pred_test_base, pred_test_olqd, team_olqd = fit_predict_baseline_plus_olqd(
@@ -173,13 +174,11 @@ def _fold_predictions(
 def fit_predict_baseline_plus_olqd(
     train_df: pd.DataFrame,
     infer_df: pd.DataFrame,
-    cfg: Config,
+    cfg: BestConfig,
     seed: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, pd.DataFrame]:
     """Fit baseline + OLQD meta-correction on train_df, predict on infer_df."""
-    builders = get_model_builders(random_state=seed)
-    baseline_model = FittedSearchModel(random_state=seed, base_builders=builders, config=cfg)
-    baseline_model.fit(train_df)
+    baseline_model = TreePoissonBestModel(config=cfg, outputs_dir=Path("outputs"), random_state=seed).fit(train_df)
 
     pred_train_base = np.clip(baseline_model.predict_total(train_df), EPS, None)
     pred_infer_base = np.clip(baseline_model.predict_total(infer_df), EPS, None)
@@ -213,7 +212,7 @@ def _metric_row(method: str, fold_id: str, df: pd.DataFrame, pred_total: np.ndar
 
 def evaluate_baseline_vs_olqd(
     ev_df: pd.DataFrame,
-    cfg: Config,
+    cfg: BestConfig,
     seed: int = 1,
     n_splits: int = 5,
 ) -> OlqdAblationResult:

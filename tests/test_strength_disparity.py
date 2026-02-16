@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from whsdsci.models.baseline_rate import BaselineLineMeanRateModel
+from whsdsci.models.defense_two_step import DefenseAdjTwoStepModel
 from whsdsci.strength import compute_disparity_ratios, compute_standardized_strengths
 
 
@@ -35,7 +35,7 @@ def _sample_ev_df() -> pd.DataFrame:
 
 def test_strength_disparity_positive_and_complete():
     df = _sample_ev_df()
-    model = BaselineLineMeanRateModel(random_state=0).fit(df)
+    model = DefenseAdjTwoStepModel(random_state=0).fit(df)
     strengths = compute_standardized_strengths(model, df)
     disparity = compute_disparity_ratios(strengths)
 

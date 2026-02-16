@@ -11,8 +11,7 @@ import pandas as pd
 
 from analysis.olqd import compute_team_olqd_table, evaluate_baseline_vs_olqd
 from phases.common import load_ev_dataset, resolve_phase1b_config, setup_logger
-from whsdsci.ensemble.search import FittedSearchModel
-from whsdsci.models import get_model_builders
+from whsdsci.models.tree_poisson_best import TreePoissonBestModel
 
 
 def _team_strength_table(paths: dict, ev_df: pd.DataFrame) -> pd.DataFrame:
@@ -108,11 +107,7 @@ def run_olqd_report(
     ab.oof_predictions.to_parquet(out_dir / "olqd_ablation_oof.parquet", index=False)
 
     # Full-data OLQD table from chosen baseline config.
-    full_model = FittedSearchModel(
-        random_state=seed,
-        base_builders=get_model_builders(random_state=seed),
-        config=cfg,
-    ).fit(ev_df)
+    full_model = TreePoissonBestModel(config=cfg, outputs_dir=repo_root / "outputs", random_state=seed).fit(ev_df)
     team_olqd = compute_team_olqd_table(model=full_model, train_ev_df=ev_df)
     team_strength = _team_strength_table(paths=paths, ev_df=ev_df)
     viz_df = team_olqd.merge(team_strength, on="team", how="inner").sort_values("olqd_ratio", ascending=False).reset_index(drop=True)
@@ -205,4 +200,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

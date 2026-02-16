@@ -18,10 +18,9 @@ from phases.common import (
     setup_logger,
     write_simple_yaml,
 )
-from whsdsci.ensemble.search import FittedSearchModel
 from whsdsci.eval.cv import make_group_kfold_splits
 from whsdsci.eval.metrics import calibration_ratio, mae_total, poisson_deviance_safe, weighted_mse_rate
-from whsdsci.models import get_model_builders
+from whsdsci.models.tree_poisson_best import TreePoissonBestModel
 from whsdsci.strength import compute_disparity_ratios, compute_standardized_strengths
 
 
@@ -39,11 +38,7 @@ def _cv_baseline_predictions(
     for split in splits:
         tr = work.iloc[split.train_idx].reset_index(drop=True)
         te = work.iloc[split.test_idx].reset_index(drop=True)
-        model = FittedSearchModel(
-            random_state=seed,
-            base_builders=get_model_builders(random_state=seed),
-            config=cfg,
-        ).fit(tr)
+        model = TreePoissonBestModel(config=cfg, outputs_dir=Path("outputs"), random_state=seed).fit(tr)
         pred = np.clip(model.predict_total(te), 1e-9, None)
         y = np.clip(pd.to_numeric(te["xg_for"], errors="coerce").to_numpy(dtype=float), 0, None)
         toi = np.maximum(pd.to_numeric(te["toi_hr"], errors="coerce").to_numpy(dtype=float), 1e-9)
@@ -166,11 +161,7 @@ def run_phase1c(
         oof["feature_mode"] = "baseline+olqd"
 
     # Full model fit for Phase 1b disparity + Phase 1c visualization relationship
-    full_model = FittedSearchModel(
-        random_state=seed,
-        base_builders=get_model_builders(random_state=seed),
-        config=cfg,
-    ).fit(ev_df)
+    full_model = TreePoissonBestModel(config=cfg, outputs_dir=Path("outputs"), random_state=seed).fit(ev_df)
     strengths = compute_standardized_strengths(model=full_model, train_ev_df=ev_df)
     ratios = compute_disparity_ratios(strengths)
     team_strength = _team_strength_table(paths=paths, ev_df=ev_df)
