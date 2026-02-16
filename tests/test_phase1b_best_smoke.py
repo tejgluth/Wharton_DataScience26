@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from whsdsci.run_phase1b_best import run_phase1b_best
+from phases.phase1b.run import run_phase1b_best
 
 
 def _tiny_raw_df(n_games: int = 12, segments_per_game: int = 8, random_state: int = 0) -> pd.DataFrame:
@@ -75,7 +75,7 @@ def test_phase1b_best_smoke(tmp_path: Path, monkeypatch):
             "official_zip_member_whl_2025": None,
         }
 
-    monkeypatch.setattr("whsdsci.run_phase1b_best.discover_paths", _fake_discover_paths)
+    monkeypatch.setattr("phases.phase1b.run.discover_paths", _fake_discover_paths)
     top10 = run_phase1b_best(repo_root=tmp_path, outputs_dir=outputs)
 
     assert not top10.empty
@@ -86,4 +86,3 @@ def test_phase1b_best_smoke(tmp_path: Path, monkeypatch):
     assert np.all(np.isfinite(top10["ratio"]))
     assert np.all(top10["ratio"] > 0)
     assert float(np.std(np.log(np.clip(top10["ratio"].to_numpy(dtype=float), 1e-9, None)))) > 0
-

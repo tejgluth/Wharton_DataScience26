@@ -1,47 +1,50 @@
-# Wharton HSDSc Hockey (Pruned Competition Runtime)
+# Wharton HSDSc Hockey (Competition-Ready Minimal Repo)
 
-This repository is pruned to run only:
-- Phase 1b confirmed best system
-- Phase 1c deliverables
-- Relevant Phase 1d section (Offensive Line Quality Disparity)
+This repo is intentionally pruned to only what is needed for submission work:
+- **Phase 1b**: run confirmed best model and produce submission files.
+- **Phase 1c**: generate required visualization.
+- **Phase 1d (relevant section)**: provide final written response file.
 
-All outputs are written under `outputs/`.
+## Folder Guide
+- `phases/phase1b/`: Phase 1b pipeline code.
+- `phases/phase1c/`: Phase 1c visualization code.
+- `phases/phase1d/`: Phase 1d written response (markdown).
+- `whsdsci/models/`: minimal model components required by confirmed best config.
+- `data/`: official competition data + PDFs (never delete).
+- `outputs/`: generated artifacts.
 
-## Run Phase 1b (Best System)
+## Run Phase 1b (Best Model)
 ```bash
 python -m whsdsci.run_phase1b_best
 ```
 
-Writes:
+Outputs:
 - `outputs/final_top10.csv`
 - `outputs/submission_phase1b.csv`
 - `outputs/best_method.txt`
 - `outputs/phase1b_run.log`
 
-## Run Phase 1c
+## Run Phase 1c (Visualization)
 ```bash
 python -m whsdsci.run_phase1c
 ```
 
-Writes:
-- `outputs/phase1c/` artifacts
+Outputs:
+- `outputs/phase1c/phase1c_line_disparity_vs_team_strength.png`
+- `outputs/phase1c/phase1c_viz_table.csv`
 - `outputs/phase1c_output.csv`
 
-## Run Phase 1d (Relevant Section)
+## Phase 1d Written Response
+- Primary file: `phases/phase1d/offensive_line_quality_disparity.md`
+- Optional copy to outputs:
 ```bash
 python -m whsdsci.run_phase1d_relevant
 ```
-
-Writes:
-- `outputs/phase1d/` artifacts
-- `outputs/phase1d_output.csv`
+Creates:
+- `outputs/phase1d/phase1d_offensive_line_quality_disparity.md`
+- `outputs/phase1d_output.md`
 
 ## Run Tests
 ```bash
 pytest -q
-```
-
-## Full Prune Verification
-```bash
-python -m whsdsci.tools.prune_verify
 ```

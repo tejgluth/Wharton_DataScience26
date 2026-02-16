@@ -1,27 +1,22 @@
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
-
-import pandas as pd
-
-from analysis.olqd_report import run_olqd_report
 
 
 def main() -> None:
-    out_dir = Path("outputs") / "phase1d"
-    result = run_olqd_report(
-        config_name=None,
-        out_dir=out_dir,
-        seed=1,
-        small=False,
-    )
-    src = out_dir / "olqd_team_table.csv"
-    dst = Path("outputs") / "phase1d_output.csv"
-    if src.exists():
-        pd.read_csv(src).to_csv(dst, index=False)
-    print(result)
+    src = Path("phases/phase1d/offensive_line_quality_disparity.md")
+    if not src.exists():
+        raise FileNotFoundError(f"Missing Phase 1d text file: {src}")
+    out_dir = Path("outputs/phase1d")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    dst = out_dir / "phase1d_offensive_line_quality_disparity.md"
+    shutil.copyfile(src, dst)
+    flat_dst = Path("outputs/phase1d_output.md")
+    shutil.copyfile(src, flat_dst)
+    print(f"Phase 1d narrative copied to {dst}")
+    print(f"Phase 1d narrative copied to {flat_dst}")
 
 
 if __name__ == "__main__":
     main()
-

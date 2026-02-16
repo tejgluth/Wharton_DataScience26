@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import numpy as np
@@ -78,25 +77,18 @@ def test_phase1c_small_mode_smoke(tmp_path: Path, monkeypatch):
         seed=1,
         out_dir=out_dir,
         small=True,
-        features="baseline+olqd",
     )
 
-    assert result["metrics"]["mean_poisson_deviance"] > 0
-    assert result["config"]["config_id"] == "cfg_test_phase1c"
+    assert result["config_id"] == "cfg_test_phase1c"
+    assert result["rows_ev"] > 0
 
     required = [
-        "metrics_summary.json",
-        "metrics_summary.md",
+        "phase1c_summary.md",
         "best_config.json",
         "best_config.yaml",
-        "predictions_oof.parquet",
-        "predictions_full.parquet",
         "phase1c_line_disparity_vs_team_strength.png",
         "phase1c_viz_table.csv",
         "run.log",
     ]
     for rel in required:
         assert (out_dir / rel).exists(), rel
-
-    payload = json.loads((out_dir / "metrics_summary.json").read_text(encoding="utf-8"))
-    assert payload["feature_mode"] == "baseline+olqd"
