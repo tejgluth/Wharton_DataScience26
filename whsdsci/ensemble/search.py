@@ -62,10 +62,21 @@ class FittedSearchModel(BaseModel):
         y = np.clip(pd.to_numeric(df["xg_for"], errors="coerce").to_numpy(dtype=float), 0, None)
         shots_vec = pd.to_numeric(df["shots_for"], errors="coerce") if "shots_for" in df.columns else pd.Series(0.0, index=df.index)
         self.default_shots_for_ = float(np.nanmedian(np.clip(shots_vec.fillna(0.0).to_numpy(dtype=float), 0, None)))
-        ctx = _context_from_df(df, default_shots_for=self.default_shots_for_)
+        xg_vec = pd.to_numeric(df["xg_for"], errors="coerce") if "xg_for" in df.columns else pd.Series(0.0, index=df.index)
+        xg_sum = float(np.clip(xg_vec.fillna(0.0).to_numpy(dtype=float), 0, None).sum())
+        shots_sum = float(np.clip(shots_vec.fillna(0.0).to_numpy(dtype=float), 0, None).sum())
+        # Used when shots_for is unavailable (e.g., synthetic standardization rows).
+        self.xg_per_shot_ = float(xg_sum / shots_sum) if shots_sum > EPS else 0.08
+        ctx = _context_from_df(
+            df,
+            default_shots_for=self.default_shots_for_,
+            mu_proxy=np.mean(P, axis=1),
+            xg_per_shot=self.xg_per_shot_,
+        )
         comb = _fit_combiner(self.config.combiner_family, self.config.hyperparams, P, y, ctx, self.config.base_models)
         self.combiner_ = comb
         mu_train_raw = _predict_combiner(comb, P, ctx)
+        mu_train_raw = _ensure_ensemble_variation(mu_raw=mu_train_raw, P=P)
         self.calibrator_ = fit_calibrator(
             y_true=y,
             mu_raw=mu_train_raw,
@@ -84,8 +95,14 @@ class FittedSearchModel(BaseModel):
 
     def predict_total(self, df: pd.DataFrame) -> np.ndarray:
         P = self._predict_base(df, self.config.base_models)
-        ctx = _context_from_df(df, default_shots_for=getattr(self, "default_shots_for_", 0.0))
+        ctx = _context_from_df(
+            df,
+            default_shots_for=getattr(self, "default_shots_for_", 0.0),
+            mu_proxy=np.mean(P, axis=1),
+            xg_per_shot=getattr(self, "xg_per_shot_", 0.08),
+        )
         mu_raw = _predict_combiner(self.combiner_, P, ctx)
+        mu_raw = _ensure_ensemble_variation(mu_raw=mu_raw, P=P)
         mu = self.calibrator_.predict(mu_raw, log_toi_hr=ctx["log_toi_hr"])
         return clip_total_positive(mu)
 
@@ -95,14 +112,26 @@ class FittedSearchModel(BaseModel):
         return np.clip(mu / toi, 1e-12, None)
 
 
-def _context_from_df(df: pd.DataFrame, default_shots_for: float = 0.0) -> dict[str, np.ndarray]:
+def _context_from_df(
+    df: pd.DataFrame,
+    default_shots_for: float = 0.0,
+    mu_proxy: np.ndarray | None = None,
+    xg_per_shot: float = 0.08,
+) -> dict[str, np.ndarray]:
     toi_raw = df["toi_hr"] if "toi_hr" in df.columns else pd.Series(1.0, index=df.index)
     toi = np.maximum(pd.to_numeric(toi_raw, errors="coerce"), EPS)
     log_toi = np.log(toi).to_numpy(dtype=float)
     home_raw = df["is_home"] if "is_home" in df.columns else pd.Series(0.0, index=df.index)
-    shots_raw = df["shots_for"] if "shots_for" in df.columns else pd.Series(float(default_shots_for), index=df.index)
     is_home = pd.to_numeric(home_raw, errors="coerce").fillna(0.0).to_numpy(dtype=float)
-    shots = pd.to_numeric(shots_raw, errors="coerce").fillna(0.0).to_numpy(dtype=float)
+    if "shots_for" in df.columns:
+        shots_raw = df["shots_for"]
+        shots = pd.to_numeric(shots_raw, errors="coerce").fillna(0.0).to_numpy(dtype=float)
+    elif mu_proxy is not None:
+        denom = max(float(xg_per_shot), 1e-6)
+        shots = np.asarray(mu_proxy, dtype=float) / denom
+    else:
+        shots = np.full(len(df), float(default_shots_for), dtype=float)
+    shots = np.clip(np.asarray(shots, dtype=float), 0.0, None)
     shots_zero = (shots <= 0).astype(float)
     return {
         "log_toi_hr": log_toi,
@@ -110,6 +139,20 @@ def _context_from_df(df: pd.DataFrame, default_shots_for: float = 0.0) -> dict[s
         "shots_for": shots,
         "shots_zero": shots_zero,
     }
+
+
+def _ensure_ensemble_variation(mu_raw: np.ndarray, P: np.ndarray) -> np.ndarray:
+    """Fallback to preserve variation when combiner collapses to a constant surface."""
+    mu = clip_total_positive(mu_raw)
+    if mu.size <= 1:
+        return mu
+    if float(np.std(mu)) > 1e-12:
+        return mu
+    anchor = np.mean(np.clip(np.asarray(P, dtype=float), EPS, None), axis=1)
+    if float(np.std(anchor)) <= 1e-12:
+        return mu
+    scale = float(np.mean(mu) / max(float(np.mean(anchor)), EPS))
+    return clip_total_positive(anchor * scale)
 
 
 def _softmax(z: np.ndarray, temp: float = 1.0) -> np.ndarray:

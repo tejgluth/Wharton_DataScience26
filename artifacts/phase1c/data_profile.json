@@ -1,0 +1,47 @@
+{
+  "rows_raw": 25827,
+  "rows_long": 51654,
+  "rows_ev": 41982,
+  "rows_non_ev": 9672,
+  "dropped_toi_nonpositive": 0,
+  "dropped_missing_keys": 0,
+  "clip_negative_counts": {
+    "home_xg": 0,
+    "away_xg": 0,
+    "home_shots": 0,
+    "away_shots": 0,
+    "home_goals": 0,
+    "away_goals": 0,
+    "toi": 0
+  },
+  "off_line_counts": {
+    "second_off": 21998,
+    "first_off": 21997,
+    "PP_kill_dwn": 2823,
+    "PP_up": 2607,
+    "empty_net_line": 2229
+  },
+  "def_pair_counts": {
+    "second_def": 22017,
+    "first_def": 21978,
+    "PP_kill_dwn": 2823,
+    "PP_up": 2607,
+    "empty_net_line": 2229
+  },
+  "toi_sec_summary": {
+    "count": 51654.0,
+    "mean": 190.1949022340961,
+    "std": 153.70074193328753,
+    "min": 0.01,
+    "10%": 51.42,
+    "25%": 92.6425,
+    "50%": 156.19,
+    "75%": 237.9875,
+    "90%": 357.0690000000003,
+    "max": 1559.67
+  },
+  "xg_zeros_fraction": 0.39174120106864907,
+  "unique_off_unit": 160,
+  "unique_def_unit": 160,
+  "teams_missing_first_or_second_off_in_ev": []
+}

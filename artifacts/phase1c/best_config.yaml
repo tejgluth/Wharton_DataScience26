@@ -1,0 +1,19 @@
+config_id: "cfg_00699"
+combiner_family: "tree_poisson"
+base_pool_id: "diverse_trio_7"
+base_models:
+  - "POISSON_GLM_OFFSET"
+  - "TWEEDIE_GLM_RATE"
+  - "TWO_STAGE_SHOTS_XG"
+  - "POISSON_GLM_OFFSET_REG"
+  - "HURDLE_XG"
+  - "RIDGE_RAPM_RATE_SOFTPLUS"
+  - "DEFENSE_ADJ_TWO_STEP"
+calibration_type: "scalar"
+hyperparams:
+  backend: "xgboost"
+  learning_rate: 0.08
+  max_depth: 3
+  n_estimators: 200
+selected_feature_mode: "baseline"
+seed: 1

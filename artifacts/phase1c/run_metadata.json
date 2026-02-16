@@ -1,0 +1,8 @@
+{
+  "seed": 1,
+  "small_mode": false,
+  "n_rows_ev": 41982,
+  "n_unique_games": 1312,
+  "n_splits": 5,
+  "git_commit": "ecb319c"
+}

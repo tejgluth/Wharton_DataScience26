@@ -1,0 +1,59 @@
+{
+  "config_id": "cfg_00699",
+  "mean_delta_poisson_deviance": 4.2002861695292216e-05,
+  "ci95_half_width": 9.507096827095641e-06,
+  "summary": [
+    {
+      "method": "baseline",
+      "mean_poisson_deviance": 0.0298901880495545,
+      "std_poisson_deviance": 0.000607697888736487,
+      "mean_weighted_mse_rate": 2.4867298655451355,
+      "mean_mae_total": 0.04574936865108494,
+      "mean_calibration_ratio": 0.9984270669879811
+    },
+    {
+      "method": "baseline+olqd",
+      "mean_poisson_deviance": 0.02993219091124979,
+      "std_poisson_deviance": 0.0006064387934865481,
+      "mean_weighted_mse_rate": 2.490646202056113,
+      "mean_mae_total": 0.04578964520365258,
+      "mean_calibration_ratio": 0.9983588224252784
+    }
+  ],
+  "source_config": {
+    "config_id": "cfg_00699",
+    "combiner_family": "tree_poisson",
+    "base_pool_id": "diverse_trio_7",
+    "base_models": [
+      "POISSON_GLM_OFFSET",
+      "TWEEDIE_GLM_RATE",
+      "TWO_STAGE_SHOTS_XG",
+      "POISSON_GLM_OFFSET_REG",
+      "HURDLE_XG",
+      "RIDGE_RAPM_RATE_SOFTPLUS",
+      "DEFENSE_ADJ_TWO_STEP"
+    ],
+    "calibration_type": "scalar",
+    "hyperparams": {
+      "backend": "xgboost",
+      "learning_rate": 0.08,
+      "max_depth": 3,
+      "n_estimators": 200
+    },
+    "mean_cv_poisson_deviance": 0.029877474926773888,
+    "std_cv_poisson_deviance": 0.0005011038758876724,
+    "phase1b_validity": {
+      "valid": true,
+      "reason": "ok",
+      "strength_std_xg60": 0.0010507952465945588,
+      "log_ratio_std": 0.12863054030747068,
+      "ratio_unique_1e6": 32,
+      "ratio_one_share_1e6": 0.0
+    },
+    "repeatability_seeds": [
+      0,
+      1,
+      2
+    ]
+  }
+}

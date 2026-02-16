@@ -1,0 +1,2 @@
+metric,n_folds,mean_delta,std_delta,ci95_half_width
+poisson_deviance_delta_baseline_plus_olqd_minus_baseline,5,4.2002861695292216e-05,1.0846181007172664e-05,9.507096827095641e-06

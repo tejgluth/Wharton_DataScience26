@@ -1,0 +1,11 @@
+{
+  "feature_mode": "baseline",
+  "config_id": "cfg_00699",
+  "config_family": "tree_poisson",
+  "n_folds": 5,
+  "mean_poisson_deviance": 0.0298901880495545,
+  "std_poisson_deviance": 0.0005435415155991553,
+  "mean_weighted_mse_rate": 2.4867298655451355,
+  "mean_mae_total": 0.04574936865108494,
+  "mean_calibration_ratio": 0.9984270669879811
+}

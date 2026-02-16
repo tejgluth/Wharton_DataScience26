@@ -1,0 +1,16 @@
+{
+  "repo_root": "/Users/speakeasy/Projects/Wharton_DataScience26",
+  "data_dir": "/Users/speakeasy/Projects/Wharton_DataScience26/data",
+  "official_zip": "/Users/speakeasy/Projects/Wharton_DataScience26/data/WHSDSC 2026 Hockey.zip",
+  "official_zip_member_whl_2025": "WHSDSC 2026 Hockey/whl_2025.csv",
+  "unzipped_whl_2025": "/Users/speakeasy/Projects/Wharton_DataScience26/.cache/unzipped/WHSDSC 2026 Hockey/WHSDSC 2026 Hockey/whl_2025.csv",
+  "whl_2025": "/Users/speakeasy/Projects/Wharton_DataScience26/.cache/unzipped/WHSDSC 2026 Hockey/WHSDSC 2026 Hockey/whl_2025.csv",
+  "whl_game_summary": "/Users/speakeasy/Projects/Wharton_DataScience26/data/whl_game_summary.csv",
+  "league_table": "/Users/speakeasy/Projects/Wharton_DataScience26/data/league_table.csv",
+  "guideline_pdf": "/Users/speakeasy/Projects/Wharton_DataScience26/WHSDSC_2026_Workbook_-_Hockey.pdf",
+  "research_pdf": "/Users/speakeasy/Projects/Wharton_DataScience26/Estimating Offensive Line Strength Disparity_ Model Selection and Approach.pdf",
+  "all_pdfs": [
+    "/Users/speakeasy/Projects/Wharton_DataScience26/Estimating Offensive Line Strength Disparity_ Model Selection and Approach.pdf",
+    "/Users/speakeasy/Projects/Wharton_DataScience26/WHSDSC_2026_Workbook_-_Hockey.pdf"
+  ]
+}
