@@ -1,0 +1,52 @@
+PHASE 1 FINAL SUBMISSION PACKAGE
+
+This file summarizes the final, validated artifacts for Round 1.
+
+Deliverables by phase:
+Phase 1a:
+- submission/phase1a/power_ranking_phase1a.csv (32-team ranking table)
+Phase 1b:
+- submission/phase1b/submission_phase1b.csv (top-10 disparity submission)
+- submission/phase1b/final_top10.csv (same ranking, method-tagged)
+Phase 1c:
+- submission/phase1c/phase1c_line_disparity_vs_team_strength.png
+- submission/phase1c/phase1c_viz_table.csv
+Phase 1d:
+- submission/phase1d/phase1d_full_response.txt
+
+Quality checks:
+- Overall status: PASS
+- phase1b_rows_10: PASS
+- phase1b_rank_1_to_10: PASS
+- phase1b_ratio_positive: PASS
+- phase1b_ratio_sorted_desc: PASS
+- phase1b_team_labels_match_whl_2025: PASS
+- phase1c_required_columns: PASS
+- phase1c_nonempty: PASS
+- phase1d_has_required_sections: PASS
+- bundle_phase1b_matches_outputs: PASS
+- bundle_phase1c_png_matches_outputs: PASS
+- bundle_phase1d_matches_source: PASS
+
+Phase 1b model summary:
+- confirmed config_id: cfg_00699
+- combiner: tree_poisson
+- base models: POISSON_GLM_OFFSET, TWEEDIE_GLM_RATE, TWO_STAGE_SHOTS_XG, POISSON_GLM_OFFSET_REG, HURDLE_XG, RIDGE_RAPM_RATE_SOFTPLUS, DEFENSE_ADJ_TWO_STEP
+- ranking generated with schedule-independent standardized line strengths
+
+Top 10 teams (Phase 1b submission):
+ rank         team  line1_strength_xg60  line2_strength_xg60    ratio                  method
+    1    guatemala             0.008364             0.006103 1.370545 tree_poisson::cfg_00699
+    2          usa             0.008014             0.005911 1.355741 tree_poisson::cfg_00699
+    3 saudi_arabia             0.006639             0.004922 1.348671 tree_poisson::cfg_00699
+    4          uae             0.005902             0.004382 1.346731 tree_poisson::cfg_00699
+    5       france             0.007527             0.005650 1.332093 tree_poisson::cfg_00699
+    6      iceland             0.007630             0.005832 1.308253 tree_poisson::cfg_00699
+    7    singapore             0.007856             0.006261 1.254661 tree_poisson::cfg_00699
+    8  new_zealand             0.007148             0.005784 1.235787 tree_poisson::cfg_00699
+    9       panama             0.007594             0.006327 1.200356 tree_poisson::cfg_00699
+   10         peru             0.007014             0.005851 1.198715 tree_poisson::cfg_00699
+
+Reference files:
+- outputs/phase1_submission_audit.json
+- Phase_1B_System.md

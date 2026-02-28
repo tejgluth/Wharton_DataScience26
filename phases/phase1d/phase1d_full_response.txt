@@ -1,0 +1,35 @@
+Phase 1d: Tell Your Story - Methodology Summary (Plain Text)
+
+1) Process
+How did you clean or transform the raw data before analysis? (around 50 words)
+We identified the official dataset inside the competition ZIP and built a canonical long table with two rows per segment (home offense and away offense). We dropped nonpositive TOI rows, clipped negative xG/shots/goals to zero, standardized identifiers, created exposure fields (TOI hours/log TOI), and restricted the primary modeling dataset to even-strength first/second line matchups.
+
+Did you create any additional variables? (around 25 words)
+Yes. We created off_unit and def_unit IDs, xG per hour rates, log exposure, home indicator, game ordering fields, schedule-independent standardized line strengths, and team-level disparity ratio.
+
+2) Tools and Techniques
+What software tools did you use? [Select all that apply]
+Python; pandas; numpy; scikit-learn; statsmodels; scipy; matplotlib; pyarrow/parquet; pypdf; pytest.
+
+How did you use the selected software, and for what purposes? (around 50 words)
+Python orchestrated the end-to-end pipeline. pandas/numpy handled data transformation and feature construction. scikit-learn/statsmodels/scipy supported grouped cross-validation, Poisson-based modeling, and constrained blending. matplotlib produced Phase 1c graphics. pypdf extracted workbook prompts for compliance checks. pytest validated table construction, positivity constraints, and disparity calculations before final artifact generation.
+
+What statistical methods did you employ? (around 100 words)
+Our objective metric was grouped out-of-sample mean Poisson deviance on segment-level xG totals with groups set to game_id to prevent leakage. We modeled exposure explicitly using TOI offsets or weighted rate formulations. Base learners included Poisson GLM (regularized and unregularized), Tweedie regression, two-stage shots-times-severity modeling, hurdle-style zero handling, RAPM-style regularized rate models, and defense-adjusted baselines. The confirmed best system used Poisson stacking with a tree-based count meta-learner and scalar calibration, trained using leakage-safe inner out-of-fold predictions. For Phase 1b ranking, we estimated schedule-independent line strengths via marginal standardization over the training defense distribution, then computed first-line versus second-line disparity ratios.
+
+3) Your Predictions
+1a: How did you determine power rankings and matchup win probabilities? (around 50 words)
+We used season-level team-strength signals grounded in expected-goal performance and matchup-adjusted segment models, then converted predicted goal expectation differences into comparative team strength rankings. For matchup probabilities, we mapped modeled scoring advantage into a bounded win-probability estimate and validated ranking/probability behavior using grouped out-of-sample checks and calibration summaries.
+
+1b: How did you approach summarizing offensive line quality disparity? (around 50 words)
+For each team, we estimated schedule-independent offensive strength for first_off and second_off using the best EV xG model and defense-marginalized standardization. We accounted for TOI exposure and defensive matchup difficulty, then computed disparity ratio = strength(first_off)/strength(second_off). Teams were ranked descending by this ratio; top 10 formed the submission output.
+
+1c: What data visualization choices did you make to clarify the numbers and emphasize takeaways? (around 50 words)
+We tested multiple chart families (scatter with trend, quadrant scatter, binned trend, dumbbell ranks, and a two-panel synthesis). The selected final figure combines a relationship panel (disparity versus team strength with trend) and a ranked panel for top disparity teams. All axes, titles, legend/caption, and annotations were designed to be self-contained.
+
+4) Your Insights
+How did you assess your model performance? (around 50 words)
+We compared candidate systems under identical 5-fold GroupKFold evaluation on EV data, using mean Poisson deviance as the primary score. Secondary diagnostics included weighted rate MSE, MAE, calibration ratio, and ranking stability checks. We also verified that final disparity outputs were non-degenerate (not flat) and team labels matched source data exactly.
+
+Did you use Generative AI tools? If so, explain each stage and how your group approached using them. (around 50 words)
+Yes. We used a coding assistant to accelerate implementation, reproducibility checks, and report drafting. AI support was constrained to engineering and writing productivity; all modeling choices, constraints, and outputs were validated through deterministic scripts, grouped cross-validation, unit tests, and explicit artifact audits against competition requirements before finalizing submissions.

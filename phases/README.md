@@ -10,7 +10,7 @@
 - `artifacts/`: latest phase-specific copies of Phase 1c outputs.
 
 ## `phase1d/`
-- `offensive_line_quality_disparity.md`: finalized written response section for Phase 1d.
+- `phase1d_full_response.txt`: finalized written response section for Phase 1d (plain text).
 
 ## Utility
 - `build_submission_bundle.py`: creates the `submission/` folder from current outputs and phase files.

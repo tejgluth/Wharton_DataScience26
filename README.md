@@ -36,15 +36,15 @@ Writes:
 
 ### Phase 1d (written response)
 Primary source file:
-- `phases/phase1d/offensive_line_quality_disparity.md`
+- `phases/phase1d/phase1d_full_response.txt`
 
 Optional output copy:
 ```bash
 python -m whsdsci.run_phase1d_relevant
 ```
 Writes:
-- `outputs/phase1d/phase1d_offensive_line_quality_disparity.md`
-- `outputs/phase1d_output.md`
+- `outputs/phase1d/phase1d_full_response.txt`
+- `outputs/phase1d_output.txt`
 
 ## Build Round Submission Folder
 After running Phase 1b and Phase 1c:
@@ -57,7 +57,7 @@ Creates:
 - `submission/phase1b/final_top10.csv`
 - `submission/phase1c/phase1c_line_disparity_vs_team_strength.png`
 - `submission/phase1c/phase1c_viz_table.csv`
-- `submission/phase1d/offensive_line_quality_disparity.md`
+- `submission/phase1d/phase1d_full_response.txt`
 - `submission/SUBMISSION_CHECKLIST.md`
 
 ## Tests
